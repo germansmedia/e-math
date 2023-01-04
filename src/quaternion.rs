@@ -8,17 +8,6 @@ use {
             Formatter,
             Result,
         },
-        ops::{
-            Add,
-            Sub,
-            Mul,
-            Div,
-            AddAssign,
-            SubAssign,
-            MulAssign,
-            DivAssign,
-            Neg,
-        },
     },
 };
 
@@ -30,44 +19,7 @@ pub struct Quaternion<T> {
     pub k: T,
 }
 
-impl<T: Add<T,Output=T> + Mul<T,Output=T> + Div<T,Output=T> + Neg<Output=T>> Quaternion<T> {
-    pub fn conj(&self) -> Quaternion<T> {
-        Quaternion {
-            r: self.r,
-            i: -self.i,
-            j: -self.j,
-            k: -self.k,
-        }
-    }
-
-    pub fn norm(&self) -> T {
-        (self.r * self.r + self.i * self.i + self.j * self.j + self.k * self.k).sqrt()
-    }
-
-    pub fn recip(&self) -> Quaternion<T> {
-        let f = self.r * self.r + self.i * self.i + self.j * self.j + self.k * self.k;
-        Quaternion {
-            r: self.r / f,
-            i: -self.i / f,
-            j: -self.j / f,
-            k: -self.k / f,
-        }
-    }
-}
-
-impl<T: Zero> Zero for Quaternion<T> { const ZERO: Quaternion<T> = Quaternion { r: T::ZERO,i: T::ZERO, j: T::ZERO, k: T::ZERO, }; }
-
-// quaternion == quaternion
-impl<T: PartialEq> PartialEq for Quaternion<T> {
-    fn eq(&self,other: &Self) -> bool {
-        (self.r == other.r) &&
-        (self.i == other.i) &&
-        (self.j == other.j) &&
-        (self.k == other.k)
-    }
-}
-
-impl<T: Display + Zero + PartialOrd> Display for Quaternion<T> {
+impl<T: Zero + Display + PartialOrd> Display for Quaternion<T> {
     fn fmt(&self,f: &mut Formatter) -> Result {
         let si = if self.i < T::ZERO {
             format!("{}i",self.i)
@@ -84,12 +36,121 @@ impl<T: Display + Zero + PartialOrd> Display for Quaternion<T> {
         } else {
             format!("+{}k",self.k)
         };
-        write!(f,"{}{}{}{}",self.r,si,sj,sk)
+        write!(f,"{}{}{}{}",self.r,si,sj,sk)        
     }
 }
 
+impl<T: Neg<Output=T>> Quaternion<T> {
+
+    // quaternion conjugate
+    pub fn conj(&self) -> Self {
+        Quaternion {
+            r: self.r,
+            i: -self.i,
+            j: -self.j,
+            k: -self.k,
+        }
+    }
+}
+
+impl<T: Add<Output=T> + Mul<Output=T> + Div<Output=T> + Neg<Output=T>> Quaternion<T> {
+
+    // |quaternion|
+    pub fn norm(&self) -> T {
+        (self.r * self.r + self.i * self.i + self.j * self.j + self.k * self.k).sqrt()
+    }
+
+    // quaternion inverse
+    pub fn inverse(&self) -> Quaternion<T> {
+        let f = self.r * self.r + self.i * self.i + self.j * self.j + self.k * self.k;
+        Quaternion {
+            r: self.r / f,
+            i: -self.i / f,
+            j: -self.j / f,
+            k: -self.k / f,
+        }
+    }
+}
+
+// quaternion == scalar
+impl<T: Zero + PartialEq> PartialEq<T> for Quaternion<T> {
+    fn eq(&self,other: &T) -> bool {
+        (self.r == *other) &&
+        (self.i == T::ZERO) &&
+        (self.j == T::ZERO) &&
+        (self.k == T::ZERO)
+    }
+}
+
+// complex == quaternion
+impl<T: Zero + PartialEq> PartialEq<Quaternion<T>> for Complex<T> {
+    fn eq(&self,other: &Quaternion<T>) -> bool {
+        (self.r == other.r) &&
+        (self.i == other.i) &&
+        (other.j == T::ZERO) &&
+        (other.k == T::ZERO)
+    }
+}
+
+// quaternion == complex
+impl<T: Zero + PartialEq> PartialEq<Complex<T>> for Quaternion<T> {
+    fn eq(&self,other: &Complex<T>) -> bool {
+        (self.r == other.r) &&
+        (self.i == other.i) &&
+        (self.j == T::ZERO) &&
+        (self.k == T::ZERO)
+    }
+}
+
+// quaternion == quaternion
+impl<T: PartialEq> PartialEq<Quaternion<T>> for Quaternion<T> {
+    fn eq(&self,other: &Quaternion<T>) -> bool {
+        (self.r == other.r) &&
+        (self.i == other.i) &&
+        (self.j == other.j) &&
+        (self.k == other.k)
+    }
+}
+
+// scalar ... quaternion
 macro_rules! scalar_quaternion {
-    ($t:ty) => {
+    ($($t:ty)*) => ($(
+
+        // scalar == quaternion
+        impl PartialEq<Quaternion<$t>> for $t {
+            fn eq(&self,other: &Quaternion<$t>) -> bool {
+                (self == &other.r) &&
+                (other.i == <$t>::ZERO) &&
+                (other.j == <$t>::ZERO) &&
+                (other.k == <$t>::ZERO)
+            }
+        }
+
+        // scalar + quaternion
+        impl Add<Quaternion<$t>> for $t {
+            type Output = Quaternion<$t>;
+            fn add(self,other: Quaternion<$t>) -> Quaternion<$t> {
+                Quaternion {
+                    r: self + other.r,
+                    i: other.i,
+                    j: other.j,
+                    k: other.k,
+                }
+            }
+        }
+
+        // scalar - quaternion
+        impl Sub<Quaternion<$t>> for $t {
+            type Output = Quaternion<$t>;
+            fn sub(self,other: Quaternion<$t>) -> Quaternion<$t> {
+                Quaternion {
+                    r: self - other.r,
+                    i: -other.i,
+                    j: -other.j,
+                    k: -other.k,
+                }
+            }
+        }
 
         // scalar * quaternion
         impl Mul<Quaternion<$t>> for $t {
@@ -104,17 +165,67 @@ macro_rules! scalar_quaternion {
             }
         }
 
-        // TODO: Div
+        // scalar / quaternion
+        impl Div<Quaternion<$t>> for $t {
+            type Output = Quaternion<$t>;
+            fn div(self,other: Quaternion<$t>) -> Quaternion<$t> {
+                let f = other.r * other.r + other.i * other.i + other.j * other.j + other.k * other.k;
+                Quaternion {
+                    r: self * other.r / f,
+                    i: self * -other.i / f,
+                    j: self * -other.j / f,
+                    k: self * -other.k / f,
+                }
+            }
+        }
+    )*)
+}
+
+scalar_quaternion! { f32 f64 }
+
+// quaternion + scalar
+impl<T: Add<Output=T>> Add<T> for Quaternion<T> {
+    type Output = Quaternion<T>;
+    fn add(self,other: T) -> Self::Output {
+        Quaternion {
+            r: self.r + other,
+            i: self.i,
+            j: self.j,
+            k: self.k,
+        }
     }
 }
 
-scalar_quaternion!(f32);
-scalar_quaternion!(f64);
+// complex + quaternion
+impl<T: Add<Output=T>> Add<Quaternion<T>> for Complex<T> {
+    type Output = Quaternion<T>;
+    fn add(self,other: Quaternion<T>) -> Self::Output {
+        Quaternion {
+            r: self.r + other.r,
+            i: self.i + other.i,
+            j: other.j,
+            k: other.k,
+        }
+    }
+}
+
+// quaternion + complex
+impl<T: Add<Output=T>> Add<Complex<T>> for Quaternion<T> {
+    type Output = Self;
+    fn add(self,other: Complex<T>) -> Self::Output {
+        Quaternion {
+            r: self.r + other.r,
+            i: self.i + other.i,
+            j: self.j,
+            k: self.k,
+        }
+    }
+}
 
 // quaternion + quaternion
-impl<T: Add<T,Output=T>> Add<Quaternion<T>> for Quaternion<T> {
+impl<T: Add<Output=T>> Add<Quaternion<T>> for Quaternion<T> {
     type Output = Self;
-    fn add(self,other: Self) -> Self {
+    fn add(self,other: Self) -> Self::Output {
         Quaternion {
             r: self.r + other.r,
             i: self.i + other.i,
@@ -124,10 +235,74 @@ impl<T: Add<T,Output=T>> Add<Quaternion<T>> for Quaternion<T> {
     }
 }
 
-// quaternion - quaternion
-impl<T: Sub<T,Output=T>> Sub<Quaternion<T>> for Quaternion<T> {
+// quaternion += scalar
+impl<T: AddAssign<T>> AddAssign<T> for Quaternion<T> {
+    fn add_assign(&mut self,other: T) {
+        self.r += other;
+    }
+}
+
+// quaternion += complex
+impl<T: AddAssign<T>> AddAssign<Complex<T>> for Quaternion<T> {
+    fn add_assign(&mut self,other: Complex<T>) {
+        self.r += other.r;
+        self.i += other.i;
+    }
+}
+
+// quaternion += quaternion
+impl<T: AddAssign<T>> AddAssign<Quaternion<T>> for Quaternion<T> {
+    fn add_assign(&mut self,other: Self) {
+        self.r += other.r;
+        self.i += other.i;
+        self.j += other.j;
+        self.k += other.k;
+    }
+}
+
+// quaternion - scalar
+impl<T: Sub<Output=T>> Sub<T> for Quaternion<T> {
     type Output = Self;
-    fn sub(self,other: Self) -> Self {
+    fn sub(self,other: T) -> Self::Output {
+        Quaternion {
+            r: self.r - other,
+            i: self.i,
+            j: self.j,
+            k: self.k,
+        }
+    }
+}
+
+// complex - quaternion
+impl<T: Sub<Output=T> + Neg<Output=T>> Sub<Quaternion<T>> for Complex<T> {
+    type Output = Quaternion<T>;
+    fn sub(self,other: Quaternion<T>) -> Self::Output {
+        Quaternion {
+            r: self.r - other.r,
+            i: self.i - other.i,
+            j: -other.j,
+            k: -other.k,
+        }
+    }
+}
+
+// quaternion - complex
+impl<T: Sub<Output=T>> Sub<Complex<T>> for Quaternion<T> {
+    type Output = Self;
+    fn sub(self,other: Complex<T>) -> Self::Output {
+        Quaternion {
+            r: self.r - other.r,
+            i: self.i - other.i,
+            j: self.j,
+            k: self.k,
+        }
+    }
+}
+
+// quaternion - quaternion
+impl<T: Sub<Output=T>> Sub<Quaternion<T>> for Quaternion<T> {
+    type Output = Self;
+    fn sub(self,other: Self) -> Self::Output {
         Quaternion {
             r: self.r - other.r,
             i: self.i - other.i,
@@ -137,10 +312,35 @@ impl<T: Sub<T,Output=T>> Sub<Quaternion<T>> for Quaternion<T> {
     }
 }
 
+// quaternion -= scalar
+impl<T: SubAssign> SubAssign<T> for Quaternion<T> {
+    fn sub_assign(&mut self,other: T) {
+        self.r -= other;
+    }
+}
+
+// quaternion -= complex
+impl<T: SubAssign> SubAssign<Complex<T>> for Quaternion<T> {
+    fn sub_assign(&mut self,other: Complex<T>) {
+        self.r -= other.r;
+        self.i -= other.i;
+    }
+}
+
+// quaternion -= quaternion
+impl<T: SubAssign> SubAssign<Quaternion<T>> for Quaternion<T> {
+    fn sub_assign(&mut self,other: Self) {
+        self.r -= other.r;
+        self.i -= other.i;
+        self.j -= other.j;
+        self.k -= other.k;
+    }
+}
+
 // quaternion * scalar
-impl<T: Mul<T,Output=T>> Mul<T> for Quaternion<T> {
+impl<T: Mul<Output=T>> Mul<T> for Quaternion<T> {
     type Output = Self;
-    fn mul(self,other: T) -> Self {
+    fn mul(self,other: T) -> Self::Output {
         Quaternion {
             r: self.r * other,
             i: self.i * other,
@@ -150,10 +350,49 @@ impl<T: Mul<T,Output=T>> Mul<T> for Quaternion<T> {
     }
 }
 
-// quaternion * vec3 (apply quaternion to vec3)
-impl<T: Add<T,Output=T> + Sub<T,Output=T> + Mul<T,Output=T>> Mul<Vec3<T>> for Quaternion<T> {
+// complex * quaternion
+impl<T: Add<Output=T> + Sub<Output=T> + Mul<Output=T>> Mul<Quaternion<T>> for Complex<T> {
+    type Output = Quaternion<T>;
+    fn mul(self,other: Quaternion<T>) -> Self::Output {
+        Quaternion {
+            r: self.r * other.r - self.i * other.i,
+            i: self.r * other.i + self.i * other.r,
+            j: self.r * other.j - self.i * other.k,
+            k: self.r * other.k + self.i * other.j,
+        }
+    }
+}
+
+// quaternion * complex
+impl<T: Add<Output=T> + Sub<Output=T> + Mul<Output=T>> Mul<Complex<T>> for Quaternion<T> {
+    type Output = Self;
+    fn mul(self,other: Complex<T>) -> Self::Output {
+        Quaternion {
+            r: self.r * other.r - self.i * other.i,
+            i: self.r * other.i + self.i * other.r,
+            j: self.j * other.r + self.k * other.i,
+            k: self.j * other.i + self.k * other.r,
+        }
+    }
+}
+
+// quaternion * quaternion
+impl<T: Add<Output=T> + Sub<Output=T> + Mul<Output=T>> Mul<Quaternion<T>> for Quaternion<T> {
+    type Output = Self;
+    fn mul(self,other: Self) -> Self::Output {
+        Quaternion {
+            r: self.r * other.r - self.i * other.i - self.j * other.j - self.k * other.k,
+            i: self.r * other.i + self.i * other.r + self.j * other.k - self.k * other.j,
+            j: self.r * other.j - self.i * other.k + self.j * other.r + self.k * other.i,
+            k: self.r * other.k + self.i * other.j - self.j * other.i + self.k * other.r,
+        }
+    }
+}
+
+// quaternion * vector
+impl<T: Add<Output=T> + Sub<Output=T> + Mul<Output=T>> Mul<Vec3<T>> for Quaternion<T> {
     type Output = Vec3<T>;
-    fn mul(self,other: Vec3<T>) -> Vec3<T> {
+    fn mul(self,other: Vec3<T>) -> Self::Output {
         let rr = self.r * self.r;
         let ri = self.r * self.i;
         let rj = self.r * self.j;
@@ -184,23 +423,48 @@ impl<T: Add<T,Output=T> + Sub<T,Output=T> + Mul<T,Output=T>> Mul<Vec3<T>> for Qu
     }
 }
 
-// quaternion * quaternion
-impl<T: Add<T,Output=T> + Sub<T,Output=T> + Mul<T,Output=T>> Mul<Quaternion<T>> for Quaternion<T> {
-    type Output = Self;
-    fn mul(self,other: Self) -> Self {
-        Quaternion {
-            r: self.r * other.r - self.i * other.i - self.j * other.j - self.k * other.k,
-            i: self.r * other.i + self.i * other.r + self.j * other.k - self.k * other.j,
-            j: self.r * other.j - self.i * other.k + self.j * other.r + self.k * other.i,
-            k: self.r * other.k + self.i * other.j - self.j * other.i + self.k * other.r,
-        }
+// quaternion *= scalar
+impl<T: MulAssign> MulAssign<T> for Quaternion<T> {
+    fn mul_assign(&mut self,other: T) {
+        self.r *= other;
+        self.i *= other;
+        self.j *= other;
+        self.k *= other;
+    }
+}
+
+// quaternion *= complex
+impl<T: Add<Output=T> + Sub<Output=T> + Mul<Output=T>> MulAssign<Complex<T>> for Quaternion<T> {
+    fn mul_assign(&mut self,other: Complex<T>) {
+        let r = self.r * other.r - self.i * other.i;
+        let i = self.i * other.r + self.r * other.i;
+        let j = self.j * other.r + self.k * other.i;
+        let k = self.k * other.r - self.j * other.i;
+        self.r = r;
+        self.i = i;
+        self.j = j;
+        self.k = k;
+    }
+}
+
+// quaternion *= quaternion
+impl<T: Add<Output=T> + Sub<Output=T> + Mul<Output=T>> MulAssign<Quaternion<T>> for Quaternion<T> {
+    fn mul_assign(&mut self,other: Quaternion<T>) {
+        let r = self.r * other.r - self.i * other.i - self.j * other.j - self.k * other.k;
+        let i = self.r * other.i + self.i * other.r + self.j * other.k - self.k * other.j;
+        let j = self.r * other.j - self.i * other.k + self.j * other.r + self.k * other.i;
+        let k = self.r * other.k + self.i * other.j - self.j * other.i + self.k * other.r;
+        self.r = r;
+        self.i = i;
+        self.j = j;
+        self.k = k;
     }
 }
 
 // quaternion / scalar
-impl<T: Div<T,Output=T>> Div<T> for Quaternion<T> {
+impl<T: Div<Output=T>> Div<T> for Quaternion<T> {
     type Output = Self;
-    fn div(self,other: T) -> Self {
+    fn div(self,other: T) -> Self::Output {
         Quaternion {
             r: self.r / other,
             i: self.i / other,
@@ -210,11 +474,98 @@ impl<T: Div<T,Output=T>> Div<T> for Quaternion<T> {
     }
 }
 
-// quaternion / quaternion
-impl<T: Add<T,Output=T> + Sub<T,Output=T> + Mul<T,Output=T> + Div<T,Output=T> + Neg<Output=T>> Div<Quaternion<T>> for Quaternion<T> {
+// complex / quaternion
+impl<T: Add<Output=T> + Sub<Output=T> + Mul<Output=T> + Div<Output=T> + Neg<Output=T>> Div<Quaternion<T>> for Complex<T> {
+    type Output = Quaternion<T>;
+    fn div(self,other: Quaternion<T>) -> Self::Output {
+        let f = other.r * other.r + other.i * other.i + other.j * other.j + other.k * other.k;
+        Quaternion {
+            r: (self.r * other.r + self.i * other.i) / f,
+            i: (self.i * other.r - self.r * other.i) / f,
+            j: (self.i * other.k - self.r * other.j) / f,
+            k: (-self.r * other.k - self.i * other.j) / f,
+        }
+    }
+}
+
+// quaternion / complex
+impl<T: Add<Output=T> + Sub<Output=T> + Mul<Output=T> + Div<Output=T>> Div<Complex<T>> for Quaternion<T> {
     type Output = Self;
-    fn div(self,other: Self) -> Self {
-        self * other.conj()  // TODO: reqlly should be other.inv()
+    fn div(self,other: Complex<T>) -> Self::Output {
+        let f = other.r * other.r + other.i * other.i;
+        Quaternion {
+            r: (self.r * other.r + self.i * other.i) / f,
+            i: (self.i * other.r - self.r * other.i) / f,
+            j: (self.j * other.r - self.k * other.i) / f,
+            k: (self.k * other.r + self.j * other.i) / f,
+        }
+    }
+}
+
+// quaternion / quaternion
+impl<T: Add<Output=T> + Sub<Output=T> + Mul<Output=T> + Div<Output=T>> Div<Quaternion<T>> for Quaternion<T> {
+    type Output = Self;
+    fn div(self,other: Self) -> Self::Output {
+        let f = other.r * other.r + other.i * other.i + other.j * other.j + other.k * other.k;
+        Quaternion {
+            r: (self.r * other.r + self.i * other.i + self.j * other.j + self.k * other.k) / f,
+            i: (self.i * other.r - self.j * other.k + self.k * other.j - self.r * other.i) / f,
+            j: (self.j * other.r - self.k * other.i - self.r * other.j + self.i * other.k) / f,
+            k: (self.k * other.r - self.r * other.k - self.i * other.j + self.j * other.i) / f,
+        }
+    }
+}
+
+// quaternion /= scalar
+impl<T: DivAssign> DivAssign<T> for Quaternion<T> {
+    fn div_assign(&mut self,other: T) {
+        self.r /= other;
+        self.i /= other;
+        self.j /= other;
+        self.k /= other;
+    }
+}
+
+// quaternion /= complex
+impl<T: Add<Output=T> + Sub<Output=T> + Mul<Output=T> + Div<Output=T>> DivAssign<Complex<T>> for Quaternion<T> {
+    fn div_assign(&mut self,other: Complex<T>) {
+        let f = other.r * other.r + other.i * other.i;
+        let r = (self.r * other.r + self.i * other.i) / f;
+        let i = (self.i * other.r - self.r * other.i) / f;
+        let j = (self.j * other.r - self.k * other.i) / f;
+        let k = (self.k * other.r + self.j * other.i) / f;
+        self.r = r;
+        self.i = i;
+        self.j = j;
+        self.k = k;
+    }
+}
+
+// quaternion /= quaternion
+impl<T: Add<Output=T> + Sub<Output=T> + Mul<Output=T> + Div<Output=T>> DivAssign<Quaternion<T>> for Quaternion<T> {
+    fn div_assign(&mut self,other: Self) {
+        let f = other.r * other.r + other.i * other.i + other.j * other.j + other.k * other.k;
+        let r = (self.r * other.r + self.i * other.i + self.j * other.j + self.k * other.k) / f;
+        let i = (self.i * other.r - self.j * other.k + self.k * other.j - self.r * other.i) / f;
+        let j = (self.j * other.r - self.k * other.i - self.r * other.j + self.i * other.k) / f;
+        let k = (self.k * other.r - self.r * other.k - self.i * other.j + self.j * other.i) / f;
+        self.r = r;
+        self.i = i;
+        self.j = j;
+        self.k = k;
+    }
+}
+
+// -quaternion
+impl<T: Neg<Output=T>> Neg for Quaternion<T> {
+    type Output = Self;
+    fn neg(self) -> Self::Output {
+        Quaternion {
+            r: -self.r,
+            i: -self.i,
+            j: -self.j,
+            k: -self.k,
+        }
     }
 }
 
