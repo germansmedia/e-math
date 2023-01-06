@@ -257,3 +257,7 @@ impl<T: Neg<Output=T>,const B: usize> Neg for Fixed<T,B> {
         Fixed(-self.0)
     }
 }
+
+impl<T,const B: usize> Real for Fixed<T,B> {
+
+}

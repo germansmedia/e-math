@@ -47,15 +47,15 @@ impl<T: Copy + Neg<Output=T>> Complex<T> {
     }
 }
 
-impl<T: Copy + Add<Output=T> + Mul<Output=T> + Div<Output=T> + Neg<Output=T> + Float> Complex<T> {
+impl<T: Copy + Add<Output=T> + Mul<Output=T> + Div<Output=T> + Neg<Output=T>> Complex<T> {
 
     /// return absolute value or norm of complex number.
-    pub fn norm(&self) -> T {
-        (self.r * self.r + self.i * self.i).sqrt()
+    pub fn norm_sqr(&self) -> T {
+        self.r * self.r + self.i * self.i
     }
 
     /// return inverse of the complex number.
-    pub fn inverse(&self) -> Self {
+    pub fn inv(&self) -> Self {
         let f = self.r * self.r + self.i * self.i;
         Complex {
             r: self.r / f,
@@ -66,6 +66,15 @@ impl<T: Copy + Add<Output=T> + Mul<Output=T> + Div<Output=T> + Neg<Output=T> + F
     /// returns argument of complex number.
     pub fn arg(&self) -> T {
         self.r.atan2(self.i)
+    }
+
+    /// compute the natural exponent.
+    pub fn exp(&self) -> Complex<T> {
+        let s = self.r.exp();
+        Complex {
+            r: s * self.i.cos(),
+            i: s * self.i.sin(),
+        }
     }
 }
 

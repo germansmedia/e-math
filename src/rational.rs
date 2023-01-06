@@ -29,7 +29,7 @@ fn _gcd<UT: Copy + Zero + PartialEq + Rem<Output=UT>>(mut a: UT,mut b: UT) -> UT
 /// A rational number has a numerator and denominator. This is useful for cases where exact calculations are needed that
 /// cannot be handled by floating point numbers.
 /// 
-/// A `Rational` can be used to build up [`Complex`] or [`Quaternion`].
+/// Rational numbers are also signed or unsigned integer numbers, so they implement [`Signed`] or [`Unsigned`].
 #[derive(Copy,Clone,Debug)]
 pub struct Rational<T,UT> {
     n: T,  // negative, 0 or positive
@@ -273,7 +273,66 @@ macro_rules! rational_impl {
                 self._reduce();
             }
         }
-        
+
+        // rational % scalar
+        impl Rem<$t> for Rational<$t,$ut> {
+            type Output = Rational<$t,$ut>;
+            fn rem(self,other: $t) -> Self::Output {
+                Rational {
+                    n: self.n % other,
+                    d: self.d,
+                }
+            }
+        }
+
+        // rational % rational
+        impl Rem<Rational<$t,$ut>> for Rational<$t,$ut> {
+            type Output = Rational<$t,$ut>;
+            fn rem(self,other: Rational<$t,$ut>) -> Rational<$t,$ut> {
+                // TODO
+                self
+            }
+        }
+
+        // rational %= scalar
+        impl RemAssign<$t> for Rational<$t,$ut> {
+            fn rem_assign(&mut self,other: $t) {
+                self.n %= other;
+            }
+        }
+
+        // rational %= rational
+        impl RemAssign<Rational<$t,$ut>> for Rational<$t,$ut> {
+            fn rem_assign(&mut self,other: Rational<$t,$ut>) {
+                // TODO
+            }
+        }
+
+        impl Unsigned for Rational<$t,$ut> {
+
+            const MIN: Self = Rational { n: <$t>::MIN,d: 1, };
+
+            const MAX: Self = Rational { n: <$t>::MAX,d: 1, };
+
+            const BITS: u32 = <$t>::BITS + <$ut>::BITS;
+
+            fn pow(self,exp: u32) -> Self {
+                let mut result = Rational {
+                    n: self.n.pow(exp),
+                    d: self.d.pow(exp),
+                };
+                result._reduce();
+                result
+            }
+
+            fn div_euclid(self,rhs: Self) -> Self {
+                self / rhs
+            }
+
+            fn rem_euclid(self,rhs: Self) -> Self {
+                self % rhs
+            }
+        }        
     )*)
 }
 

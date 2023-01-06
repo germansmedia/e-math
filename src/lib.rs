@@ -55,23 +55,20 @@ impl One for i128 { const ONE: i128 = 1; }
 impl One for f32 { const ONE: f32 = 1.0; }
 impl One for f64 { const ONE: f64 = 1.0; }
 
-pub trait Float {
-    fn sqrt(self) -> Self;
-    fn atan2(self,other: Self) -> Self;
-}
+mod unsigned;
+pub use unsigned::*;
 
-impl Float for f32 {
-    fn sqrt(self) -> Self { self.sqrt() }
-    fn atan2(self,other: Self) -> Self { self.atan2(other) }
-}
-
-impl Float for f64 {
-    fn sqrt(self) -> Self { self.sqrt() }
-    fn atan2(self,other: Self) -> Self { self.atan2(other) }
-}
+mod signed;
+pub use signed::*;
 
 mod rational;
 pub use rational::*;
+
+mod real;
+pub use real::*;
+
+mod float;
+pub use float::*;
 
 mod fixed;
 pub use fixed::*;
