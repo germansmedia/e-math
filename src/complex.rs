@@ -11,12 +11,19 @@ use {
     },
 };
 
+/// Complex number template.
+///
+/// A complex number is a way to represent the square root of a negative scalar by combining an imaginary number with the
+/// scalar.
+/// 
+/// Can use any scalar underneath (typically [`f32`] or [`f64`]), as well as [`Rational`] and [`Fixed`] types.
 #[derive(Copy,Clone,Debug)]
 pub struct Complex<T> {
     pub r: T,
     pub i: T,
 }
 
+/// Display the complex number as `x+yi`.
 impl<T: Zero + Display + PartialOrd> Display for Complex<T> {
     fn fmt(&self,f: &mut Formatter) -> Result {
         let si = if self.i < T::ZERO {
@@ -29,9 +36,9 @@ impl<T: Zero + Display + PartialOrd> Display for Complex<T> {
     }
 }
 
-impl<T: Neg<Output=T>> Complex<T> {
+impl<T: Copy + Neg<Output=T>> Complex<T> {
 
-    // complex conjugate
+    /// return complex conjugate (x-yi).
     pub fn conj(&self) -> Self {
         Complex {
             r: self.r,
@@ -40,14 +47,14 @@ impl<T: Neg<Output=T>> Complex<T> {
     }
 }
 
-impl<T: Add<Output=T> + Mul<Output=T> + Div<Output=T> + Neg<Output=T>> Complex<T> {
+impl<T: Copy + Add<Output=T> + Mul<Output=T> + Div<Output=T> + Neg<Output=T> + Float> Complex<T> {
 
-    // |complex|
+    /// return absolute value or norm of complex number.
     pub fn norm(&self) -> T {
         (self.r * self.r + self.i * self.i).sqrt()
     }
 
-    // complex inverse
+    /// return inverse of the complex number.
     pub fn inverse(&self) -> Self {
         let f = self.r * self.r + self.i * self.i;
         Complex {
@@ -56,13 +63,13 @@ impl<T: Add<Output=T> + Mul<Output=T> + Div<Output=T> + Neg<Output=T>> Complex<T
         }
     }
 
-    // complex argument
+    /// returns argument of complex number.
     pub fn arg(&self) -> T {
         self.r.atan2(self.i)
     }
 }
 
-// complex == complex
+/// complex == complex
 impl<T: PartialEq> PartialEq<Complex<T>> for Complex<T> {
     fn eq(&self,other: &Complex<T>) -> bool {
         (self.r == other.r) &&
@@ -70,11 +77,10 @@ impl<T: PartialEq> PartialEq<Complex<T>> for Complex<T> {
     }
 }
 
-// scalar ... complex
 macro_rules! scalar_complex {
     ($($t:ty)*) => ($(
 
-        // scalar + complex
+        /// scalar + complex
         impl Add<Complex<$t>> for $t {
             type Output = Complex<$t>;
             fn add(self,other: Complex<$t>) -> Complex<$t> {
@@ -85,7 +91,7 @@ macro_rules! scalar_complex {
             }
         }
 
-        // scalar - complex
+        /// scalar - complex
         impl Sub<Complex<$t>> for $t {
             type Output = Complex<$t>;
             fn sub(self,other: Complex<$t>) -> Complex<$t> {
@@ -96,7 +102,7 @@ macro_rules! scalar_complex {
             }
         }
 
-        // scalar * conplex
+        /// scalar * conplex
         impl Mul<Complex<$t>> for $t {
             type Output = Complex<$t>;
             fn mul(self,other: Complex<$t>) -> Complex<$t> {
@@ -107,7 +113,7 @@ macro_rules! scalar_complex {
             }
         }
 
-        // scalar / complex
+        /// scalar / complex
         impl Div<Complex<$t>> for $t {
             type Output = Complex<$t>;
             fn div(self,other: Complex<$t>) -> Complex<$t> {
@@ -123,7 +129,7 @@ macro_rules! scalar_complex {
 
 scalar_complex! { f32 f64 }
 
-// complex + scalar
+/// complex + scalar
 impl<T: Add<Output=T>> Add<T> for Complex<T> {
     type Output = Self;
     fn add(self,other: T) -> Self::Output {
@@ -134,7 +140,7 @@ impl<T: Add<Output=T>> Add<T> for Complex<T> {
     }
 }
 
-// complex + complex
+/// complex + complex
 impl<T: Add<Output=T>> Add<Complex<T>> for Complex<T> {
     type Output = Self;
     fn add(self,other: Self) -> Self::Output {
@@ -145,14 +151,14 @@ impl<T: Add<Output=T>> Add<Complex<T>> for Complex<T> {
     }
 }
 
-// complex += scalar
+/// complex += scalar
 impl<T: AddAssign> AddAssign<T> for Complex<T> {
     fn add_assign(&mut self,other: T) {
         self.r += other;
     }
 }
 
-// complex += complex
+/// complex += complex
 impl<T: AddAssign> AddAssign<Complex<T>> for Complex<T> {
     fn add_assign(&mut self,other: Self) {
         self.r += other.r;
@@ -160,7 +166,7 @@ impl<T: AddAssign> AddAssign<Complex<T>> for Complex<T> {
     }
 }
 
-// complex - scalar
+/// complex - scalar
 impl<T: Sub<Output=T>> Sub<T> for Complex<T> {
     type Output = Self;
     fn sub(self,other: T) -> Self::Output {
@@ -171,7 +177,7 @@ impl<T: Sub<Output=T>> Sub<T> for Complex<T> {
     }
 }
 
-// complex - complex
+/// complex - complex
 impl<T: Sub<Output=T>> Sub<Complex<T>> for Complex<T> {
     type Output = Self;
     fn sub(self,other: Self) -> Self::Output {
@@ -182,14 +188,14 @@ impl<T: Sub<Output=T>> Sub<Complex<T>> for Complex<T> {
     }
 }
 
-// complex -= scalar
+/// complex -= scalar
 impl<T: SubAssign> SubAssign<T> for Complex<T> {
     fn sub_assign(&mut self,other: T) {
         self.r -= other;
     }
 }
 
-// complex -= complex
+/// complex -= complex
 impl<T: SubAssign> SubAssign<Complex<T>> for Complex<T> {
     fn sub_assign(&mut self,other: Self) {
         self.r -= other.r;
@@ -197,8 +203,8 @@ impl<T: SubAssign> SubAssign<Complex<T>> for Complex<T> {
     }
 }
 
-// complex * scalar
-impl<T: Mul<Output=T>> Mul<T> for Complex<T> {
+/// complex * scalar
+impl<T: Copy + Mul<Output=T>> Mul<T> for Complex<T> {
     type Output = Self;
     fn mul(self,other: T) -> Self::Output {
         Complex {
@@ -208,8 +214,8 @@ impl<T: Mul<Output=T>> Mul<T> for Complex<T> {
     }
 }
 
-// complex * complex
-impl<T: Add<Output=T> + Sub<Output=T> + Mul<Output=T>> Mul<Complex<T>> for Complex<T> {
+/// complex * complex
+impl<T: Copy + Add<Output=T> + Sub<Output=T> + Mul<Output=T>> Mul<Complex<T>> for Complex<T> {
     type Output = Self;
     fn mul(self,other: Self) -> Self::Output {
         Complex {
@@ -219,16 +225,16 @@ impl<T: Add<Output=T> + Sub<Output=T> + Mul<Output=T>> Mul<Complex<T>> for Compl
     }
 }
 
-// complex *= scalar
-impl<T: MulAssign> MulAssign<T> for Complex<T> {
+/// complex *= scalar
+impl<T: Copy + MulAssign> MulAssign<T> for Complex<T> {
     fn mul_assign(&mut self,other: T) {
         self.r *= other;
         self.i *= other;
     }
 }
 
-// complex *= complex
-impl<T: Add<Output=T> + Sub<Output=T> + Mul<Output=T>> MulAssign<Complex<T>> for Complex<T> {
+/// complex *= complex
+impl<T: Copy + Add<Output=T> + Sub<Output=T> + Mul<Output=T>> MulAssign<Complex<T>> for Complex<T> {
     fn mul_assign(&mut self,other: Self) {
         let r = self.r * other.r - self.i * other.i;
         let i = self.r * other.i + self.i * other.r;
@@ -237,8 +243,8 @@ impl<T: Add<Output=T> + Sub<Output=T> + Mul<Output=T>> MulAssign<Complex<T>> for
     }
 }
 
-// complex / scalar
-impl<T: Div<Output=T>> Div<T> for Complex<T> {
+/// complex / scalar
+impl<T: Copy + Div<Output=T>> Div<T> for Complex<T> {
     type Output = Self;
     fn div(self,other: T) -> Self::Output {
         Complex {
@@ -248,8 +254,8 @@ impl<T: Div<Output=T>> Div<T> for Complex<T> {
     }
 }
 
-// complex / complex
-impl<T: Add<Output=T> + Sub<Output=T> + Mul<Output=T> + Div<Output=T>> Div<Complex<T>> for Complex<T> {
+/// complex / complex
+impl<T: Copy + Add<Output=T> + Sub<Output=T> + Mul<Output=T> + Div<Output=T>> Div<Complex<T>> for Complex<T> {
     type Output = Self;
     fn div(self,other: Self) -> Self {
         let f = other.r * other.r + other.i * other.i;
@@ -260,16 +266,16 @@ impl<T: Add<Output=T> + Sub<Output=T> + Mul<Output=T> + Div<Output=T>> Div<Compl
     }
 }
 
-// complex /= scalar
-impl<T: DivAssign> DivAssign<T> for Complex<T> {
+/// complex /= scalar
+impl<T: Copy + DivAssign> DivAssign<T> for Complex<T> {
     fn div_assign(&mut self,other: T) {
         self.r /= other;
         self.i /= other;
     }
 }
 
-// complex /= complex
-impl<T: Add<Output=T> + Sub<Output=T> + Mul<Output=T> + Div<Output=T>> DivAssign<Complex<T>> for Complex<T> {
+/// complex /= complex
+impl<T: Copy + Add<Output=T> + Sub<Output=T> + Mul<Output=T> + Div<Output=T>> DivAssign<Complex<T>> for Complex<T> {
     fn div_assign(&mut self,other: Self) {
         let f = other.r * other.r + other.i * other.i;
         let r = (self.r * other.r + self.i * other.i) / f;
@@ -279,7 +285,7 @@ impl<T: Add<Output=T> + Sub<Output=T> + Mul<Output=T> + Div<Output=T>> DivAssign
     }
 }
 
-// -complex
+/// -complex
 impl<T: Neg<Output=T>> Neg for Complex<T> {
     type Output = Self;
     fn neg(self) -> Self {

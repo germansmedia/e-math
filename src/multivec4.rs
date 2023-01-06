@@ -22,6 +22,11 @@ use {
     },
 };
 
+/// 4D Multivector template for geometric algebra.
+/// 
+/// A 4D Multivector describes the linear combination of a scalar `r`, four vectors `x`, `y`, `z` and `w` that describe
+/// directions, six bivectors `xy`, `xz`, `xw`, `yz`, `yw` and `zw` that each describe an orientation on a surface, four
+/// pseudovectors `xyz`, `xyw`, `xzw` and `yzw` which describe oriented volumes, and a pseudoscalar `xyzw` that describes ...
 #[derive(Copy,Clone,Debug)]
 pub struct MultiVec4<T> {
     pub r: T,

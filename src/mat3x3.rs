@@ -28,6 +28,7 @@ pub struct Mat3x3<T> {
     pub z: Vec3<T>,
 }
 
+/*
 impl<T: Zero + PartialEq + Add<T,Output=T> + Sub<T,Output=T> + Mul<T,Output=T> + Div<T,Output=T> + Neg<Output=T>> Mat3x3<T> {
     pub fn transpose(self) -> Mat3x3<T> {
         Mat3x3 {
@@ -339,3 +340,4 @@ impl<T: Neg<Output=T>> Neg for Mat3x3<T> {
         }
     }
 }
+*/

@@ -11,6 +11,13 @@ use {
     },
 };
 
+/// Quaternion template.
+/// 
+/// A quaternion is a way to represent 3D orientation and allow for correct rotations without gimbal lock. The concept is
+/// similar to [`Complex`], where imaginary numbers are combined with scalars. The [`Quaternion`] adds three separate
+/// imaginary numbers, allowing rotations around 3 orthogonal axes.
+/// 
+/// Can use any scalar underneath (typically [`f32`] or [`f64`]), as well as [`Rational`] and [`Fixed`] types.
 #[derive(Copy,Clone,Debug)]
 pub struct Quaternion<T> {
     pub r: T,
@@ -40,7 +47,7 @@ impl<T: Zero + Display + PartialOrd> Display for Quaternion<T> {
     }
 }
 
-impl<T: Neg<Output=T>> Quaternion<T> {
+impl<T: Copy + Neg<Output=T>> Quaternion<T> {
 
     // quaternion conjugate
     pub fn conj(&self) -> Self {
@@ -53,7 +60,7 @@ impl<T: Neg<Output=T>> Quaternion<T> {
     }
 }
 
-impl<T: Add<Output=T> + Mul<Output=T> + Div<Output=T> + Neg<Output=T>> Quaternion<T> {
+impl<T: Copy + Add<Output=T> + Mul<Output=T> + Div<Output=T> + Neg<Output=T> + Float> Quaternion<T> {
 
     // |quaternion|
     pub fn norm(&self) -> T {
@@ -338,7 +345,7 @@ impl<T: SubAssign> SubAssign<Quaternion<T>> for Quaternion<T> {
 }
 
 // quaternion * scalar
-impl<T: Mul<Output=T>> Mul<T> for Quaternion<T> {
+impl<T: Copy + Mul<Output=T>> Mul<T> for Quaternion<T> {
     type Output = Self;
     fn mul(self,other: T) -> Self::Output {
         Quaternion {
@@ -351,7 +358,7 @@ impl<T: Mul<Output=T>> Mul<T> for Quaternion<T> {
 }
 
 // complex * quaternion
-impl<T: Add<Output=T> + Sub<Output=T> + Mul<Output=T>> Mul<Quaternion<T>> for Complex<T> {
+impl<T: Copy + Add<Output=T> + Sub<Output=T> + Mul<Output=T>> Mul<Quaternion<T>> for Complex<T> {
     type Output = Quaternion<T>;
     fn mul(self,other: Quaternion<T>) -> Self::Output {
         Quaternion {
@@ -364,7 +371,7 @@ impl<T: Add<Output=T> + Sub<Output=T> + Mul<Output=T>> Mul<Quaternion<T>> for Co
 }
 
 // quaternion * complex
-impl<T: Add<Output=T> + Sub<Output=T> + Mul<Output=T>> Mul<Complex<T>> for Quaternion<T> {
+impl<T: Copy + Add<Output=T> + Sub<Output=T> + Mul<Output=T>> Mul<Complex<T>> for Quaternion<T> {
     type Output = Self;
     fn mul(self,other: Complex<T>) -> Self::Output {
         Quaternion {
@@ -377,7 +384,7 @@ impl<T: Add<Output=T> + Sub<Output=T> + Mul<Output=T>> Mul<Complex<T>> for Quate
 }
 
 // quaternion * quaternion
-impl<T: Add<Output=T> + Sub<Output=T> + Mul<Output=T>> Mul<Quaternion<T>> for Quaternion<T> {
+impl<T: Copy + Add<Output=T> + Sub<Output=T> + Mul<Output=T>> Mul<Quaternion<T>> for Quaternion<T> {
     type Output = Self;
     fn mul(self,other: Self) -> Self::Output {
         Quaternion {
@@ -390,7 +397,7 @@ impl<T: Add<Output=T> + Sub<Output=T> + Mul<Output=T>> Mul<Quaternion<T>> for Qu
 }
 
 // quaternion * vector
-impl<T: Add<Output=T> + Sub<Output=T> + Mul<Output=T>> Mul<Vec3<T>> for Quaternion<T> {
+impl<T: Copy + Add<Output=T> + Sub<Output=T> + Mul<Output=T>> Mul<Vec3<T>> for Quaternion<T> {
     type Output = Vec3<T>;
     fn mul(self,other: Vec3<T>) -> Self::Output {
         let rr = self.r * self.r;
@@ -424,7 +431,7 @@ impl<T: Add<Output=T> + Sub<Output=T> + Mul<Output=T>> Mul<Vec3<T>> for Quaterni
 }
 
 // quaternion *= scalar
-impl<T: MulAssign> MulAssign<T> for Quaternion<T> {
+impl<T: Copy + MulAssign> MulAssign<T> for Quaternion<T> {
     fn mul_assign(&mut self,other: T) {
         self.r *= other;
         self.i *= other;
@@ -434,7 +441,7 @@ impl<T: MulAssign> MulAssign<T> for Quaternion<T> {
 }
 
 // quaternion *= complex
-impl<T: Add<Output=T> + Sub<Output=T> + Mul<Output=T>> MulAssign<Complex<T>> for Quaternion<T> {
+impl<T: Copy + Add<Output=T> + Sub<Output=T> + Mul<Output=T>> MulAssign<Complex<T>> for Quaternion<T> {
     fn mul_assign(&mut self,other: Complex<T>) {
         let r = self.r * other.r - self.i * other.i;
         let i = self.i * other.r + self.r * other.i;
@@ -448,7 +455,7 @@ impl<T: Add<Output=T> + Sub<Output=T> + Mul<Output=T>> MulAssign<Complex<T>> for
 }
 
 // quaternion *= quaternion
-impl<T: Add<Output=T> + Sub<Output=T> + Mul<Output=T>> MulAssign<Quaternion<T>> for Quaternion<T> {
+impl<T: Copy + Add<Output=T> + Sub<Output=T> + Mul<Output=T>> MulAssign<Quaternion<T>> for Quaternion<T> {
     fn mul_assign(&mut self,other: Quaternion<T>) {
         let r = self.r * other.r - self.i * other.i - self.j * other.j - self.k * other.k;
         let i = self.r * other.i + self.i * other.r + self.j * other.k - self.k * other.j;
@@ -462,7 +469,7 @@ impl<T: Add<Output=T> + Sub<Output=T> + Mul<Output=T>> MulAssign<Quaternion<T>> 
 }
 
 // quaternion / scalar
-impl<T: Div<Output=T>> Div<T> for Quaternion<T> {
+impl<T: Copy + Div<Output=T>> Div<T> for Quaternion<T> {
     type Output = Self;
     fn div(self,other: T) -> Self::Output {
         Quaternion {
@@ -475,7 +482,7 @@ impl<T: Div<Output=T>> Div<T> for Quaternion<T> {
 }
 
 // complex / quaternion
-impl<T: Add<Output=T> + Sub<Output=T> + Mul<Output=T> + Div<Output=T> + Neg<Output=T>> Div<Quaternion<T>> for Complex<T> {
+impl<T: Copy + Add<Output=T> + Sub<Output=T> + Mul<Output=T> + Div<Output=T> + Neg<Output=T>> Div<Quaternion<T>> for Complex<T> {
     type Output = Quaternion<T>;
     fn div(self,other: Quaternion<T>) -> Self::Output {
         let f = other.r * other.r + other.i * other.i + other.j * other.j + other.k * other.k;
@@ -489,7 +496,7 @@ impl<T: Add<Output=T> + Sub<Output=T> + Mul<Output=T> + Div<Output=T> + Neg<Outp
 }
 
 // quaternion / complex
-impl<T: Add<Output=T> + Sub<Output=T> + Mul<Output=T> + Div<Output=T>> Div<Complex<T>> for Quaternion<T> {
+impl<T: Copy + Add<Output=T> + Sub<Output=T> + Mul<Output=T> + Div<Output=T>> Div<Complex<T>> for Quaternion<T> {
     type Output = Self;
     fn div(self,other: Complex<T>) -> Self::Output {
         let f = other.r * other.r + other.i * other.i;
@@ -503,7 +510,7 @@ impl<T: Add<Output=T> + Sub<Output=T> + Mul<Output=T> + Div<Output=T>> Div<Compl
 }
 
 // quaternion / quaternion
-impl<T: Add<Output=T> + Sub<Output=T> + Mul<Output=T> + Div<Output=T>> Div<Quaternion<T>> for Quaternion<T> {
+impl<T: Copy + Add<Output=T> + Sub<Output=T> + Mul<Output=T> + Div<Output=T>> Div<Quaternion<T>> for Quaternion<T> {
     type Output = Self;
     fn div(self,other: Self) -> Self::Output {
         let f = other.r * other.r + other.i * other.i + other.j * other.j + other.k * other.k;
@@ -517,7 +524,7 @@ impl<T: Add<Output=T> + Sub<Output=T> + Mul<Output=T> + Div<Output=T>> Div<Quate
 }
 
 // quaternion /= scalar
-impl<T: DivAssign> DivAssign<T> for Quaternion<T> {
+impl<T: Copy + DivAssign> DivAssign<T> for Quaternion<T> {
     fn div_assign(&mut self,other: T) {
         self.r /= other;
         self.i /= other;
@@ -527,7 +534,7 @@ impl<T: DivAssign> DivAssign<T> for Quaternion<T> {
 }
 
 // quaternion /= complex
-impl<T: Add<Output=T> + Sub<Output=T> + Mul<Output=T> + Div<Output=T>> DivAssign<Complex<T>> for Quaternion<T> {
+impl<T: Copy + Add<Output=T> + Sub<Output=T> + Mul<Output=T> + Div<Output=T>> DivAssign<Complex<T>> for Quaternion<T> {
     fn div_assign(&mut self,other: Complex<T>) {
         let f = other.r * other.r + other.i * other.i;
         let r = (self.r * other.r + self.i * other.i) / f;
@@ -542,7 +549,7 @@ impl<T: Add<Output=T> + Sub<Output=T> + Mul<Output=T> + Div<Output=T>> DivAssign
 }
 
 // quaternion /= quaternion
-impl<T: Add<Output=T> + Sub<Output=T> + Mul<Output=T> + Div<Output=T>> DivAssign<Quaternion<T>> for Quaternion<T> {
+impl<T: Copy + Add<Output=T> + Sub<Output=T> + Mul<Output=T> + Div<Output=T>> DivAssign<Quaternion<T>> for Quaternion<T> {
     fn div_assign(&mut self,other: Self) {
         let f = other.r * other.r + other.i * other.i + other.j * other.j + other.k * other.k;
         let r = (self.r * other.r + self.i * other.i + self.j * other.j + self.k * other.k) / f;

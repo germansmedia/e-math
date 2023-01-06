@@ -18,4 +18,4 @@ codegen-units = 1
 
 [lib]
 name = "e_math"
-craate-type = ["rlib"]
+crate-type = ["rlib"]

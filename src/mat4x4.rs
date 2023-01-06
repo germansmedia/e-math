@@ -29,6 +29,7 @@ pub struct Mat4x4<T> {
     pub w: Vec4<T>,
 }
 
+/*
 impl<T: PartialEq + Zero + Add<T,Output=T> + Sub<T,Output=T> + Mul<T,Output=T> + Neg<Output=T>> Mat4x4<T> {
 
     pub fn transpose(self) -> Mat4x4<T> {
@@ -375,3 +376,4 @@ impl<T: Neg<Output=T>> Neg for Mat4x4<T> {
         }
     }
 }
+*/

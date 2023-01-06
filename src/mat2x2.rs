@@ -27,6 +27,7 @@ pub struct Mat2x2<T> {
     pub y: Vec2<T>,
 }
 
+/*
 impl<T: Zero + Add<T,Output=T> + Mul<T,Output=T> + Div<T,Output=T> + Neg<Output=T> + PartialEq> Mat2x2<T> {
     pub fn transpose(self) -> Mat2x2<T> {
         Mat2x2 {
@@ -278,3 +279,4 @@ impl<T: Neg<Output=T>> Neg for Mat2x2<T> {
         }
     }
 }
+*/
